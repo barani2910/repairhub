@@ -42,6 +42,30 @@ const seedData = async () => {
         role: 'user',
         phone: '+1987654321',
         address: '456 Oak Ave, Town, State 67890'
+      },
+      {
+        name: 'Karthik',
+        email: 'karthik@example.com',
+        password: 'password123',
+        role: 'user',
+        phone: '+919876543210',
+        address: '12 Anna Salai, Chennai, Tamil Nadu'
+      },
+      {
+        name: 'Priya',
+        email: 'priya@example.com',
+        password: 'password123',
+        role: 'user',
+        phone: '+919876543211',
+        address: '45 T Nagar, Chennai, Tamil Nadu'
+      },
+      {
+        name: 'Surya',
+        email: 'surya@example.com',
+        password: 'password123',
+        role: 'user',
+        phone: '+919876543212',
+        address: '76 OMR, Chennai, Tamil Nadu'
       }
     ];
 
@@ -101,6 +125,51 @@ const seedData = async () => {
         experience: '3 years',
         phone: '+1778889999',
         address: '202 Maple Dr, Village, State 11223',
+        verified: false,
+        availability: true,
+        rating: 0
+      },
+      {
+        name: 'Muthu',
+        email: 'muthu@plumber.com',
+        password: 'password123',
+        role: 'worker',
+        profession: 'Plumber',
+        hourlyRate: 15,
+        skills: ['Plumbing', 'Pipe Repair'],
+        experience: '10 years',
+        phone: '+919876543213',
+        address: '12 Mount Road, Chennai, Tamil Nadu',
+        verified: true,
+        availability: true,
+        rating: 4.9
+      },
+      {
+        name: 'Kavitha',
+        email: 'kavitha@electrician.com',
+        password: 'password123',
+        role: 'worker',
+        profession: 'Electrician',
+        hourlyRate: 20,
+        skills: ['Wiring', 'Electrical Repair'],
+        experience: '6 years',
+        phone: '+919876543214',
+        address: '54 Velachery, Chennai, Tamil Nadu',
+        verified: true,
+        availability: true,
+        rating: 4.6
+      },
+      {
+        name: 'Ramesh',
+        email: 'ramesh@carpenter.com',
+        password: 'password123',
+        role: 'worker',
+        profession: 'Carpenter',
+        hourlyRate: 18,
+        skills: ['Woodwork', 'Furniture Repair'],
+        experience: '8 years',
+        phone: '+919876543215',
+        address: '89 Guindy, Chennai, Tamil Nadu',
         verified: false,
         availability: true,
         rating: 0
