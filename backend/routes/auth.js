@@ -1,92 +1,79 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Admin = require('../models/Admin');
+const { pool, newId, toApi } = require('../db');
 
 const router = express.Router();
 
-// Register for user/worker
 router.post('/register', async (req, res) => {
   const { name, email, password, role, phone, address, profession, location, hourlyRate, skills, experience } = req.body;
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'All fields are required' });
   }
-
   if (!['user', 'worker'].includes(role)) {
     return res.status(400).json({ message: 'Invalid role' });
   }
 
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const [existingUsers] = await pool.execute('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
+    if (existingUsers.length) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-      phone,
-      address: role === 'user' ? address : undefined,
-      profession: role === 'worker' ? profession : undefined,
-      location: role === 'worker' ? location : undefined,
-      hourlyRate: role === 'worker' ? hourlyRate : undefined,
-      skills: role === 'worker' ? skills : undefined,
-      experience: role === 'worker' ? experience : undefined,
-      verified: role === 'worker' ? false : true, // users are verified by default, workers need approval
-      availability: role === 'worker' ? false : true
-    });
-
-    await user.save();
-
-    res.status(201).json({ message: 'User registered successfully' });
+    await pool.execute(
+      `INSERT INTO users
+        (id, name, email, password, role, phone, address, profession, location, hourlyRate, skills, experience, verified, availability)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        newId(), name, email, hashedPassword, role, phone || null,
+        role === 'user' ? address || null : null,
+        role === 'worker' ? profession || null : null,
+        role === 'worker' ? location || null : null,
+        role === 'worker' ? hourlyRate || null : null,
+        JSON.stringify(role === 'worker' && Array.isArray(skills) ? skills : []),
+        role === 'worker' ? experience || null : null,
+        role === 'user', role === 'user'
+      ]
+    );
+    return res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Register error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Login for all
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
   try {
-    let user = await User.findOne({ email });
-    let isAdmin = false;
-    if (!user) {
-      user = await Admin.findOne({ email });
-      isAdmin = true;
+    let [rows] = await pool.execute('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
+    if (!rows[0]) {
+      [rows] = await pool.execute('SELECT * FROM admins WHERE email = ? LIMIT 1', [email]);
     }
-
-    if (!user) {
+    const account = rows[0];
+    if (!account || !(await bcrypt.compare(password, account.password))) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not configured');
     }
-
-    // Generate JWT token
+    const user = toApi(account);
     const token = jwt.sign(
       { id: user._id, role: user.role || 'admin' },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-
-    // Return user data without password
-    const { password: _, ...userData } = user.toObject();
-    res.json({ user: userData, token });
+    delete user.password;
+    return res.json({ user, token });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 

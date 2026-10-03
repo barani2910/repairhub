@@ -21,17 +21,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
+    <div className="auth-shell min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
+        <div className="auth-brand text-center">
           <div className="mx-auto w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-2xl">W</span>
+            <span className="auth-mark text-white font-bold text-2xl">R</span>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome to WorkerBook</h2>
-          <p className="mt-2 text-sm text-gray-600">Book verified workers for your home services</p>
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome to RepairHub</h2>
+          <p className="mt-2 text-sm text-gray-600">Trusted local pros, ready when you need them.</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-xl p-8">
+        <div className="auth-card bg-white rounded-xl shadow-xl p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <div>
@@ -78,7 +78,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-gray-600">
-          New to WorkerBook?{' '}
+          New to RepairHub?{' '}
           <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
             Create an account
           </Link>

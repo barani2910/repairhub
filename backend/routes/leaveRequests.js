@@ -1,127 +1,101 @@
 const express = require('express');
 const { protect, isAdmin } = require('../middleware/auth');
-const LeaveRequest = require('../models/LeaveRequest');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
+const { pool, newId, toApi } = require('../db');
 
 const router = express.Router();
 
 router.use(protect);
 
-// Get leave requests (worker: own; admin: all)
 router.get('/', async (req, res) => {
   try {
-    const role = req.user.role;
-    let leaveRequests;
-
-    if (role === 'admin') {
-      leaveRequests = await LeaveRequest.find({})
-        .populate('workerId', 'name email')
-        .sort({ appliedAt: -1 });
-    } else if (role === 'worker') {
-      leaveRequests = await LeaveRequest.find({ workerId: req.user._id })
-        .sort({ appliedAt: -1 });
-    } else {
+    if (req.user.role === 'admin') {
+      const [rows] = await pool.execute(
+        `SELECT l.*, u.name AS workerName, u.email AS workerEmail
+         FROM leaveRequests l
+         LEFT JOIN users u ON u.id = l.workerId
+         ORDER BY l.appliedAt DESC`
+      );
+      return res.json(rows.map((row) => {
+        const leaveRequest = toApi(row);
+        const { workerName, workerEmail } = leaveRequest;
+        delete leaveRequest.workerName;
+        delete leaveRequest.workerEmail;
+        leaveRequest.workerId = workerName
+          ? { _id: leaveRequest.workerId, name: workerName, email: workerEmail }
+          : null;
+        return leaveRequest;
+      }));
+    }
+    if (req.user.role !== 'worker') {
       return res.status(403).json({ message: 'Access denied' });
     }
-
-    res.json(leaveRequests);
+    const [rows] = await pool.execute(
+      'SELECT * FROM leaveRequests WHERE workerId = ? ORDER BY appliedAt DESC',
+      [req.user._id]
+    );
+    return res.json(rows.map(toApi));
   } catch (error) {
     console.error('Get leave requests error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Create new leave request (worker only)
 router.post('/', async (req, res) => {
   try {
     if (req.user.role !== 'worker') {
       return res.status(403).json({ message: 'Only workers can create leave requests' });
     }
-
     const { startDate, endDate, reason } = req.body;
-
     if (!startDate || !endDate || !reason) {
       return res.status(400).json({ message: 'Start date, end date, and reason required' });
     }
-
-    const leaveRequest = new LeaveRequest({
-      workerId: req.user._id,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      reason
-    });
-
-    await leaveRequest.save();
-
-    // Notify admin (assuming single admin or all admins; here, create for a default admin if needed, but skip for simplicity)
-    res.status(201).json(leaveRequest);
+    const id = newId();
+    await pool.execute(
+      'INSERT INTO leaveRequests (id, workerId, startDate, endDate, reason) VALUES (?, ?, ?, ?, ?)',
+      [id, req.user._id, new Date(startDate), new Date(endDate), reason]
+    );
+    const [rows] = await pool.execute('SELECT * FROM leaveRequests WHERE id = ?', [id]);
+    return res.status(201).json(toApi(rows[0]));
   } catch (error) {
     console.error('Create leave request error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Admin approve leave request
-router.put('/admin/:id/approve', protect, isAdmin, async (req, res) => {
+async function updateLeaveStatus(req, res, status) {
   try {
-    const leaveRequest = await LeaveRequest.findById(req.params.id);
+    const [rows] = await pool.execute('SELECT * FROM leaveRequests WHERE id = ? LIMIT 1', [req.params.id]);
+    const leaveRequest = rows[0];
     if (!leaveRequest) {
       return res.status(404).json({ message: 'Leave request not found' });
     }
-
     if (leaveRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'Leave request cannot be approved' });
+      return res.status(400).json({ message: `Leave request cannot be ${status}` });
     }
 
-    leaveRequest.status = 'approved';
-    await leaveRequest.save();
-
-    // Notify worker
-    const worker = await User.findById(leaveRequest.workerId);
-    await new Notification({
-      recipientId: leaveRequest.workerId,
-      senderId: req.user._id,
-      message: `Your leave request from ${leaveRequest.startDate.toDateString()} to ${leaveRequest.endDate.toDateString()} has been approved`,
-      type: 'leave'
-    }).save();
-
-    res.json(leaveRequest);
+    await pool.execute(
+      'UPDATE leaveRequests SET status = ? WHERE id = ? AND status = ?',
+      [status, req.params.id, 'pending']
+    );
+    await pool.execute(
+      'INSERT INTO notifications (id, recipientId, senderId, message, type) VALUES (?, ?, ?, ?, ?)',
+      [
+        newId(),
+        leaveRequest.workerId,
+        req.user._id,
+        `Your leave request from ${new Date(leaveRequest.startDate).toDateString()} to ${new Date(leaveRequest.endDate).toDateString()} has been ${status}`,
+        'leave'
+      ]
+    );
+    leaveRequest.status = status;
+    return res.json(toApi(leaveRequest));
   } catch (error) {
-    console.error('Approve leave request error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error(`${status === 'approved' ? 'Approve' : 'Reject'} leave request error:`, error);
+    return res.status(500).json({ message: 'Server error' });
   }
-});
+}
 
-// Admin reject leave request
-router.put('/admin/:id/reject', protect, isAdmin, async (req, res) => {
-  try {
-    const leaveRequest = await LeaveRequest.findById(req.params.id);
-    if (!leaveRequest) {
-      return res.status(404).json({ message: 'Leave request not found' });
-    }
-
-    if (leaveRequest.status !== 'pending') {
-      return res.status(400).json({ message: 'Leave request cannot be rejected' });
-    }
-
-    leaveRequest.status = 'rejected';
-    await leaveRequest.save();
-
-    // Notify worker
-    const worker = await User.findById(leaveRequest.workerId);
-    await new Notification({
-      recipientId: leaveRequest.workerId,
-      senderId: req.user._id,
-      message: `Your leave request from ${leaveRequest.startDate.toDateString()} to ${leaveRequest.endDate.toDateString()} has been rejected`,
-      type: 'leave'
-    }).save();
-
-    res.json(leaveRequest);
-  } catch (error) {
-    console.error('Reject leave request error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.put('/admin/:id/approve', isAdmin, (req, res) => updateLeaveStatus(req, res, 'approved'));
+router.put('/admin/:id/reject', isAdmin, (req, res) => updateLeaveStatus(req, res, 'rejected'));
 
 module.exports = router;

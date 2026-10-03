@@ -1,7 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./db');
+const { connectDB } = require('./db');
 const authRoutes = require('./routes/auth');
 const bookingsRoutes = require('./routes/bookings');
 const notificationsRoutes = require('./routes/notifications');
@@ -9,9 +9,6 @@ const leaveRequestsRoutes = require('./routes/leaveRequests');
 const workersRoutes = require('./routes/workers');
 
 const app = express();
-
-// Connect to DB
-connectDB();
 
 // Middleware
 app.use(cors());
@@ -32,6 +29,13 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Unable to start server:', error);
+    process.exit(1);
+  });

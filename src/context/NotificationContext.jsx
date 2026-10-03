@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { readJsonResponse } from '../utils/api';
 
 const NotificationContext = createContext();
 
@@ -28,7 +29,7 @@ export const NotificationProvider = ({ children }) => {
         }
       });
       if (response.ok) {
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setNotifications(data);
       } else {
         console.error('Failed to fetch notifications');
@@ -63,7 +64,7 @@ export const NotificationProvider = ({ children }) => {
         body: JSON.stringify({ recipientId, senderId, message, type })
       });
       if (response.ok) {
-        const newNotif = await response.json();
+        const newNotif = await readJsonResponse(response);
         setNotifications(prev => [newNotif, ...prev]);
       }
     } catch (error) {

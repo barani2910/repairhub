@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { Calendar, CheckCircle, XCircle, Clock, AlertCircle, MapPin } from 'lucide-react';
 
@@ -30,7 +31,7 @@ export default function BookingHistory() {
         if (!response.ok) {
           throw new Error('Failed to fetch bookings');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setBookings(data);
       } catch (err) {
         setError(err.message);
@@ -56,7 +57,7 @@ export default function BookingHistory() {
       if (!response.ok) {
         throw new Error('Failed to process payment');
       }
-      const result = await response.json();
+      const result = await readJsonResponse(response);
       // Refresh bookings
       const fetchResponse = await fetch('/api/bookings', {
         headers: {
@@ -65,7 +66,7 @@ export default function BookingHistory() {
         }
       });
       if (fetchResponse.ok) {
-        const data = await fetchResponse.json();
+        const data = await readJsonResponse(fetchResponse);
         setBookings(data);
       }
     } catch (err) {
@@ -103,7 +104,7 @@ export default function BookingHistory() {
         }
       });
       if (fetchResponse.ok) {
-        const data = await fetchResponse.json();
+        const data = await readJsonResponse(fetchResponse);
         setBookings(data);
       }
     } catch (err) {

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import { Briefcase, DollarSign, Clock, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { readJsonResponse } from '../../utils/api';
 
 export default function WorkerDashboard() {
   const { user, token } = useAuth();
@@ -28,7 +29,7 @@ export default function WorkerDashboard() {
         if (!response.ok) {
           throw new Error('Failed to fetch bookings');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setBookings(data);
       } catch (err) {
         setError(err.message);

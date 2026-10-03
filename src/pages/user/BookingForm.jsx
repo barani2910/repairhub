@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import { Calendar, Clock, MapPin, DollarSign, AlertCircle, CreditCard } from 'lucide-react';
 
 export default function BookingForm() {
@@ -39,7 +40,7 @@ export default function BookingForm() {
         if (!response.ok) {
           throw new Error('Failed to fetch worker');
         }
-        const workerData = await response.json();
+        const workerData = await readJsonResponse(response);
         setWorker(workerData);
       } catch (err) {
         setError(err.message);

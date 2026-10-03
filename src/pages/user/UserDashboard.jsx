@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import { Search, Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { readJsonResponse } from '../../utils/api';
 
 export default function UserDashboard() {
   const { user, token } = useAuth();
@@ -30,7 +31,7 @@ export default function UserDashboard() {
         if (!response.ok) {
           throw new Error('Failed to fetch bookings');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setBookings(data);
       } catch (err) {
         setError(err.message);
@@ -56,7 +57,7 @@ export default function UserDashboard() {
       if (!response.ok) {
         throw new Error('Failed to process payment');
       }
-      const result = await response.json();
+      const result = await readJsonResponse(response);
       // Refresh bookings
       const fetchResponse = await fetch('/api/bookings', {
         headers: {
@@ -65,7 +66,7 @@ export default function UserDashboard() {
         }
       });
       if (fetchResponse.ok) {
-        const data = await fetchResponse.json();
+        const data = await readJsonResponse(fetchResponse);
         setBookings(data);
       }
     } catch (err) {
@@ -103,7 +104,7 @@ export default function UserDashboard() {
         }
       });
       if (fetchResponse.ok) {
-        const data = await fetchResponse.json();
+        const data = await readJsonResponse(fetchResponse);
         setBookings(data);
       }
     } catch (err) {

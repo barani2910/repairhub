@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { Users, Search, User, Briefcase, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 
 export default function ManageUsers() {
   const { token } = useAuth();
@@ -37,9 +38,9 @@ export default function ManageUsers() {
           throw new Error('Failed to fetch users');
         }
 
-        const users = await usersRes.json();
-        const workers = await workersRes.json();
-        const admins = await adminsRes.json();
+        const users = await readJsonResponse(usersRes);
+        const workers = await readJsonResponse(workersRes);
+        const admins = await readJsonResponse(adminsRes);
 
         // Normalize admins to match User structure
         const normalizedAdmins = admins.map(admin => ({

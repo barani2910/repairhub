@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import { Users, UserCheck, Calendar, DollarSign, AlertCircle, TrendingUp } from 'lucide-react';
+import { readJsonResponse } from '../../utils/api';
 
 export default function AdminDashboard() {
   const { token } = useAuth();
@@ -52,11 +53,11 @@ export default function AdminDashboard() {
         }
 
         const [users, workers, pendingWorkers, bookings, leaveRequests] = await Promise.all([
-          usersRes.json(),
-          workersRes.json(),
-          pendingWorkersRes.json(),
-          bookingsRes.json(),
-          leaveRequestsRes.json()
+          readJsonResponse(usersRes),
+          readJsonResponse(workersRes),
+          readJsonResponse(pendingWorkersRes),
+          readJsonResponse(bookingsRes),
+          readJsonResponse(leaveRequestsRes)
         ]);
 
         const verifiedWorkers = workers.filter(w => w.verified).length;

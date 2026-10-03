@@ -1,63 +1,70 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
-const User = require('../models/User');
+const { pool, toApi } = require('../db');
 
 const router = express.Router();
 
 router.use(protect);
 
-// Get all verified workers (for search/booking)
 router.get('/', async (req, res) => {
   try {
-    const { profession, location } = req.query;
-    let query = { role: 'worker', verified: true, availability: true };
-
-    if (profession) {
-      query.profession = profession;
+    const conditions = ['role = ?', 'verified = TRUE', 'availability = TRUE'];
+    const values = ['worker'];
+    if (req.query.profession) {
+      conditions.push('profession = ?');
+      values.push(req.query.profession);
     }
-    if (location) {
-      query.location = location;
+    if (req.query.location) {
+      conditions.push('location = ?');
+      values.push(req.query.location);
     }
-
-    const workers = await User.find(query)
-      .select('-password')
-      .sort({ rating: -1 });
-
-    res.json(workers);
+    const [rows] = await pool.execute(
+      `SELECT * FROM users WHERE ${conditions.join(' AND ')} ORDER BY rating DESC`,
+      values
+    );
+    return res.json(rows.map((row) => {
+      const worker = toApi(row);
+      delete worker.password;
+      return worker;
+    }));
   } catch (error) {
     console.error('Get workers error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get all verified workers without filters (for initial load in search)
 router.get('/all', async (req, res) => {
   try {
-    const workers = await User.find({ role: 'worker', verified: true })
-      .select('-password')
-      .sort({ rating: -1 });
-
-    res.json(workers);
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE role = ? AND verified = TRUE ORDER BY rating DESC',
+      ['worker']
+    );
+    return res.json(rows.map((row) => {
+      const worker = toApi(row);
+      delete worker.password;
+      return worker;
+    }));
   } catch (error) {
     console.error('Get all workers error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get single worker by ID (for booking form)
 router.get('/:id', async (req, res) => {
   try {
-    const worker = await User.findOne({ _id: req.params.id, role: 'worker', verified: true })
-      .select('-password');
-
-    if (!worker) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE id = ? AND role = ? AND verified = TRUE LIMIT 1',
+      [req.params.id, 'worker']
+    );
+    if (!rows[0]) {
       return res.status(404).json({ message: 'Worker not found' });
     }
-
-    res.json(worker);
+    const worker = toApi(rows[0]);
+    delete worker.password;
+    return res.json(worker);
   } catch (error) {
     console.error('Get worker error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 

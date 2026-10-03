@@ -1,8 +1,29 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, User, LogOut, Menu, X } from 'lucide-react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Bell, Briefcase, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, Users, Wrench, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useState } from 'react';
+
+const roleLinks = {
+  user: [
+    { label: 'Overview', to: '/user', icon: LayoutDashboard },
+    { label: 'Find a pro', to: '/user/search', icon: Search },
+    { label: 'My bookings', to: '/user/history', icon: CalendarDays }
+  ],
+  worker: [
+    { label: 'Overview', to: '/worker', icon: LayoutDashboard },
+    { label: 'Requests', to: '/worker/requests', icon: ClipboardList },
+    { label: 'Work history', to: '/worker/history', icon: CalendarDays },
+    { label: 'Earnings', to: '/worker/earnings', icon: Briefcase },
+    { label: 'Time off', to: '/worker/leave', icon: CalendarDays }
+  ],
+  admin: [
+    { label: 'Overview', to: '/admin', icon: LayoutDashboard },
+    { label: 'Verification', to: '/admin/verify-workers', icon: ShieldCheck },
+    { label: 'People', to: '/admin/manage-users', icon: Users },
+    { label: 'Bookings', to: '/admin/bookings', icon: CalendarDays }
+  ]
+};
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -17,104 +38,82 @@ export default function Navbar() {
 
   if (!user) return null;
 
+  const links = roleLinks[user.role] || [];
+  const closeMenu = () => setMobileMenuOpen(false);
+
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to={`/${user.role}`} className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">W</span>
-              </div>
-              <span className="text-xl font-bold text-gray-800">WorkerBook</span>
-            </Link>
-          </div>
+    <nav className="site-nav sticky top-0 z-50">
+      <div className="site-nav-inner">
+        <Link to={`/${user.role}`} className="site-brand" aria-label="RepairHub home">
+          <span className="site-brand-mark"><Wrench size={20} strokeWidth={2.4} /></span>
+          <span className="site-brand-name">Repair<span>Hub</span></span>
+        </Link>
 
-          <div className="hidden md:flex items-center space-x-6">
-            <Link
-              to={`/${user.role}`}
-              className="text-gray-700 hover:text-blue-600 transition"
+        <div className="site-nav-links">
+          {links.map(({ label, to, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === `/${user.role}`}
+              className={({ isActive }) => `site-nav-link${isActive ? ' is-active' : ''}`}
             >
-              Dashboard
-            </Link>
+              <Icon size={16} />
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
 
-            <Link
-              to="/notifications"
-              className="relative text-gray-700 hover:text-blue-600 transition"
-            >
-              <Bell className="w-6 h-6" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
-
-            <Link
-              to="/profile"
-              className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition"
-            >
-              <User className="w-6 h-6" />
-              <span>{user.name}</span>
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 text-gray-700 hover:text-red-600 transition"
-            >
-              <LogOut className="w-6 h-6" />
-              <span>Logout</span>
-            </button>
-          </div>
-
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-700 hover:text-blue-600"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+        <div className="site-nav-actions">
+          <Link to="/notifications" className="nav-icon-button" aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}>
+            <Bell size={19} />
+            {unreadCount > 0 && <span className="notification-count">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+          </Link>
+          <Link to="/profile" className="nav-account">
+            <span className="nav-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+            <span className="nav-account-name">{user.name}</span>
+          </Link>
+          <button type="button" onClick={handleLogout} className="nav-logout" aria-label="Log out" title="Log out">
+            <LogOut size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="nav-menu-toggle"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
         </div>
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link
-              to={`/${user.role}`}
-              className="block px-3 py-2 text-gray-700 hover:bg-blue-50 rounded-md"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/notifications"
-              className="block px-3 py-2 text-gray-700 hover:bg-blue-50 rounded-md flex items-center justify-between"
-              onClick={() => setMobileMenuOpen(false)}
-            >
+        <div className="mobile-nav-panel">
+          <div className="mobile-nav-links">
+            {links.map(({ label, to, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === `/${user.role}`}
+                onClick={closeMenu}
+                className={({ isActive }) => `mobile-nav-link${isActive ? ' is-active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+            <Link to="/notifications" onClick={closeMenu} className="mobile-nav-link">
+              <Bell size={18} />
               <span>Notifications</span>
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {unreadCount}
-                </span>
-              )}
+              {unreadCount > 0 && <span className="notification-count">{unreadCount}</span>}
             </Link>
-            <Link
-              to="/profile"
-              className="block px-3 py-2 text-gray-700 hover:bg-blue-50 rounded-md"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Profile
+            <Link to="/profile" onClick={closeMenu} className="mobile-nav-link">
+              <Users size={18} />
+              <span>My profile</span>
             </Link>
-            <button
-              onClick={() => {
-                handleLogout();
-                setMobileMenuOpen(false);
-              }}
-              className="block w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
-            >
-              Logout
+            <button type="button" onClick={handleLogout} className="mobile-nav-link mobile-nav-logout">
+              <LogOut size={18} />
+              <span>Log out</span>
             </button>
           </div>
         </div>

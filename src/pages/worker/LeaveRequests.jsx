@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { Calendar, Plus, CheckCircle, XCircle, Clock } from 'lucide-react';
 
@@ -37,7 +38,7 @@ export default function LeaveRequests() {
       if (!response.ok) {
         throw new Error('Failed to fetch leave requests');
       }
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       setRequests(data.sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt)));
     } catch (err) {
       setError(err.message);

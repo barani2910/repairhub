@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { DollarSign, TrendingUp, Calendar, Briefcase } from 'lucide-react';
 
@@ -27,7 +28,7 @@ export default function Earnings() {
         if (!response.ok) {
           throw new Error('Failed to fetch bookings');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         const paidBookings = data.filter(b => b.status === 'final_payment_done' || b.status === 'rated');
         setBookings(paidBookings.sort((a, b) => new Date(b.endTime) - new Date(a.endTime)));
       } catch (err) {

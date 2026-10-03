@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { AlertCircle, Check, X, Calendar, MapPin, Clock } from 'lucide-react';
 
@@ -33,7 +34,7 @@ export default function PendingRequests() {
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       const pendingBookings = data.filter(b => b.status === 'pending');
       setBookings(pendingBookings);
     } catch (err) {

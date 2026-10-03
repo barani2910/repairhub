@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { UserCheck, Check, X, Star, Briefcase, MapPin, DollarSign } from 'lucide-react';
 
@@ -20,7 +21,7 @@ export default function VerifyWorkers() {
         'Authorization': `Bearer ${token}`
       }
     });
-    const data = await response.json();
+    const data = await readJsonResponse(response);
     if (response.ok) {
       setWorkers(data);
     } else {

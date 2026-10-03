@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { Calendar, CheckCircle, Clock, MapPin, PlayCircle, DollarSign, Star } from 'lucide-react';
 
@@ -32,7 +33,7 @@ export default function WorkHistory() {
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
-      const data = await response.json();
+      const data = await readJsonResponse(response);
       const filteredBookings = data.filter(b => b.status === 'accepted' || b.status === 'completed' || b.status === 'final_price_submitted' || b.status === 'final_payment_done' || b.status === 'rated');
       setBookings(filteredBookings.sort((a, b) => new Date(b.startTime) - new Date(a.startTime)));
     } catch (err) {

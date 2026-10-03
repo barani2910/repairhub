@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/Layout';
 import { Search, Filter, Star, MapPin, DollarSign, Briefcase, CheckCircle } from 'lucide-react';
+import { readJsonResponse } from '../../utils/api';
 
 const PROFESSIONS = ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'Cleaner', 'Gardener', 'Handyman'];
 const LOCATIONS = ['Downtown', 'Suburbs', 'East Side', 'West Side', 'North Side', 'South Side'];
@@ -42,7 +43,7 @@ export default function SearchWorkers() {
         if (!response.ok) {
           throw new Error('Failed to fetch workers');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setWorkers(data);
         setFilteredWorkers(data);
       } catch (err) {

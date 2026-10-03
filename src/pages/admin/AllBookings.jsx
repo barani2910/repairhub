@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { readJsonResponse } from '../../utils/api';
 import Layout from '../../components/Layout';
 import { Calendar, Search, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 
@@ -29,7 +30,7 @@ export default function AllBookings() {
         if (!response.ok) {
           throw new Error('Failed to fetch bookings');
         }
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         setBookings(data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime)));
       } catch (err) {
         setError(err.message);
